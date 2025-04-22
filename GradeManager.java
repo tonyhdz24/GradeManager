@@ -3,6 +3,9 @@ import java.sql.*;
 import java.util.*;
 
 public class GradeManager {
+    public void showMenu() {
+        System.out.println("Exit: Close GradeManager");
+    }
 
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
@@ -11,7 +14,7 @@ public class GradeManager {
         Statement stmt = null, stmt2 = null;
         try {
             // Hardcoded Connection info
-            int nRemotePort = 50939; //  Remote port number of the database
+            int nRemotePort = 50939; // Remote port number of the database
             String strDbPassword = "db41825"; // Database login password
             String dbName = "gradeManager"; // Database name
 
@@ -28,8 +31,23 @@ public class GradeManager {
                             + "/test?verifyServerCertificate=false&useSSL=true&serverTimezone=UTC",
                     "msandbox",
                     strDbPassword);
-            // Do something with the Connection
+            // Print welcome to terminal
             System.out.println("Database [test db] connection succeeded!");
+            System.out.println("=======GradeManager=======");
+            System.out.println("Welcome to GradeManager");
+
+            // Read user input for command
+            Scanner scanner = new Scanner(System.in); // Create a Scanner object
+            System.out.println("Enter command: ");
+            String cmd = scanner.nextLine().toLowerCase(); // Read user input
+
+            // REPL
+            while (!cmd.equals("exit")) {
+                System.out.println("Enter command: ");
+
+                cmd = scanner.nextLine().toLowerCase(); // Read user input
+            }
+            scanner.close();
             System.out.println();
 
             /*
