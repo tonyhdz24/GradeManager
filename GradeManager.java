@@ -7,6 +7,10 @@ public class GradeManager {
         System.out.println("Exit: Close GradeManager");
     }
 
+    public static void newClass() {
+        System.out.println("Adding a new class");
+    }
+
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
 
@@ -38,14 +42,22 @@ public class GradeManager {
 
             // Read user input for command
             Scanner scanner = new Scanner(System.in); // Create a Scanner object
-            System.out.println("Enter command: ");
-            String cmd = scanner.nextLine().toLowerCase(); // Read user input
-
+            boolean isRunning = true;
             // REPL
-            while (!cmd.equals("exit")) {
+            while (isRunning) {
                 System.out.println("Enter command: ");
-
-                cmd = scanner.nextLine().toLowerCase(); // Read user input
+                String cmd = scanner.nextLine().toLowerCase(); // Read user input
+                // Different Commands
+                switch (cmd) {
+                    case "exit":
+                        isRunning = false;
+                        break;
+                    case "new-class":
+                        newClass();
+                        break;
+                    default:
+                        break;
+                }
             }
             scanner.close();
             System.out.println();
