@@ -84,7 +84,24 @@ public class GradeManager {
                     case "new-class":
                         resultSet = newClass(inputParameters, con);
 
-                        break;
+                         break;
+
+                    case "list-class":
+                         resultSet=stmt.executeQuery("SELECT * FROM '" + dbName + "'.'Class':"); 
+                         ResultSetMetaData rsmd = resultSet.getMetaData();
+
+				int columnsNumber = rsmd.getColumnCount();
+				while (resultSet.next()) {
+					for (int i = 1; i <= columnsNumber; i++) {
+						if (i > 1) System.out.print(",  ");
+						String columnValue = resultSet.getString(i);
+						System.out.print(columnValue + " " + rsmd.getColumnName(i));
+					}
+					System.out.println(" ");
+				}
+
+                    break;
+
                     default:
                         break;
                 }
