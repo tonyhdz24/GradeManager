@@ -7,11 +7,26 @@ public class GradeManager {
         System.out.println("Exit: Close GradeManager");
     }
 
-    public static void newClass(String[] inputParameters) {
+    public static ResultSet newClass(String[] inputParameters, Connection con) throws SQLException {
         System.out.println("Adding a new class");
-        for (String string : inputParameters) {
-            System.out.println("Parameter: " + string);
-        }
+        /* TO INSERT INTO TABLES */
+        String courseNumber = inputParameters[0];
+        String term = inputParameters[1];
+        String sectionNumber = inputParameters[2];
+        String className = inputParameters[3];
+
+        String insert = "INSERT INTO gradeManager.Class (CourseNumber, ClassName, Term, SectionNumber, Description) " +
+                "VALUES ('" + courseNumber + "', '" + className + "', '" + term + "', '" + sectionNumber
+                + "', 'No description')";
+                
+        Statement stmt = con.createStatement();
+        int res = stmt.executeUpdate(insert);
+
+        con.commit(); // transaction block ends
+
+        System.out.println("Transaction done!");
+
+        return stmt.executeQuery("select * from `" + "gradeManager" + "`.`Student`;");
     }
 
     public static void main(String[] args)
@@ -46,6 +61,7 @@ public class GradeManager {
             // Read user input for command
             Scanner scanner = new Scanner(System.in); // Create a Scanner object
             boolean isRunning = true;
+            ResultSet resultSet;
             // REPL
             while (isRunning) {
                 System.out.println("Enter command: ");
@@ -58,12 +74,16 @@ public class GradeManager {
                 String[] inputParameters = Arrays.copyOfRange(inputTokenized, 1, inputTokenized.length);
 
                 // Different Commands
+                con.setAutoCommit(false);// transaction block starts
+                stmt = con.createStatement();
+                // ResultSet resultSet;
                 switch (cmd) {
                     case "exit":
                         isRunning = false;
                         break;
                     case "new-class":
-                        newClass(inputParameters);
+                        resultSet = newClass(inputParameters, con);
+
                         break;
                     default:
                         break;
@@ -84,7 +104,8 @@ public class GradeManager {
 
             /* TO EXECUTE A QUERY */
 
-            ResultSet resultSet = stmt.executeQuery("select * from `" + dbName + "`.`Student`;");
+            // ResultSet resultSet = stmt.executeQuery("select * from `" + dbName +
+            // "`.`Student`;");
 
             /* TO INSERT INTO TABLES */
 
@@ -106,18 +127,18 @@ public class GradeManager {
              * 
              */
 
-            ResultSetMetaData rsmd = resultSet.getMetaData();
+            // ResultSetMetaData rsmd = resultSet.getMetaData();
 
-            int columnsNumber = rsmd.getColumnCount();
-            while (resultSet.next()) {
-                for (int i = 1; i <= columnsNumber; i++) {
-                    if (i > 1)
-                        System.out.print(",  ");
-                    String columnValue = resultSet.getString(i);
-                    System.out.print(columnValue + " " + rsmd.getColumnName(i));
-                }
-                System.out.println(" ");
-            }
+            // int columnsNumber = rsmd.getColumnCount();
+            // while (resultSet.next()) {
+            // for (int i = 1; i <= columnsNumber; i++) {
+            // if (i > 1)
+            // System.out.print(", ");
+            // String columnValue = resultSet.getString(i);
+            // System.out.print(columnValue + " " + rsmd.getColumnName(i));
+            // }
+            // System.out.println(" ");
+            // }
 
             System.out.println("Number of rows affected by the insert statement: ");
 
