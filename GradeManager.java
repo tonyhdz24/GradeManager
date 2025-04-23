@@ -18,7 +18,7 @@ public class GradeManager {
         String insert = "INSERT INTO gradeManager.Class (CourseNumber, ClassName, Term, SectionNumber, Description) " +
                 "VALUES ('" + courseNumber + "', '" + className + "', '" + term + "', '" + sectionNumber
                 + "', 'No description')";
-                
+
         Statement stmt = con.createStatement();
         int res = stmt.executeUpdate(insert);
 
@@ -26,7 +26,7 @@ public class GradeManager {
 
         System.out.println("Transaction done!");
 
-        return stmt.executeQuery("select * from `" + "gradeManager" + "`.`Student`;");
+        return stmt.executeQuery("select * from `" + "gradeManager" + "`.`Class`;");
     }
 
     public static void main(String[] args)
