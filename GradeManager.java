@@ -7,8 +7,11 @@ public class GradeManager {
         System.out.println("Exit: Close GradeManager");
     }
 
-    public static void newClass() {
+    public static void newClass(String[] inputParameters) {
         System.out.println("Adding a new class");
+        for (String string : inputParameters) {
+            System.out.println("Parameter: " + string);
+        }
     }
 
     public static void main(String[] args)
@@ -46,14 +49,21 @@ public class GradeManager {
             // REPL
             while (isRunning) {
                 System.out.println("Enter command: ");
-                String cmd = scanner.nextLine().toLowerCase(); // Read user input
+                // Get user input and tokenize it
+                String inputString = scanner.nextLine().toLowerCase(); // Read user input
+                String[] inputTokenized = inputString.split(" ");
+                String cmd = inputTokenized[0];
+
+                // Store the rest of the input parametes in an array
+                String[] inputParameters = Arrays.copyOfRange(inputTokenized, 1, inputTokenized.length);
+
                 // Different Commands
                 switch (cmd) {
                     case "exit":
                         isRunning = false;
                         break;
                     case "new-class":
-                        newClass();
+                        newClass(inputParameters);
                         break;
                     default:
                         break;
