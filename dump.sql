@@ -26,7 +26,7 @@ CREATE TABLE Category (
 
 CREATE TABLE Assignment (
     AssignmentID INT PRIMARY KEY AUTO_INCREMENT,
-    Name VARCHAR(100) NOT NULL,
+    Name VARCHAR(100) NOT NULL UNIQUE,
     PointValue INT NOT NULL,
     categoryID INT NOT NULL,
     classID INT NOT NULL,
