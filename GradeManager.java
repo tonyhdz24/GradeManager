@@ -6,103 +6,29 @@ public class GradeManager {
     private static Integer selectedClassID = null;
     public void showMenu() {
         System.out.println("Exit: Close GradeManager");
-        System.out.println("new-class <courseNumber> <term> <sectionNumber> \"<className>\"");
-        System.out.println("list-classes");
-        System.out.println("select-class <courseNumber> [<term> <sectionNumber>]");
-        System.out.println("show-class");
     }
 
-    public static void newClass(String[] params, Connection con) throws SQLException {
-        if (params.length < 4) {
-            System.out.println("Usage: new-class <courseNumber> <term> <sectionNumber> \"<className>\"");
-            return;
-        }
-        String courseNumber = params[0];
-        String term = params[1];
-        int sectionNumber = Integer.parseInt(params[2]);
-        String className = params[3].replace("\"", ""); // Remove quotes
-    
-        String sql = "INSERT INTO Class (CourseNumber, ClassName, Term, SectionNumber, Description) " +
-                     "VALUES (?, ?, ?, ?, 'No description')";
-        PreparedStatement pstmt = con.prepareStatement(sql);
-        pstmt.setString(1, courseNumber);
-        pstmt.setString(2, className);
-        pstmt.setString(3, term);
-        pstmt.setInt(4, sectionNumber);
-        int rows = pstmt.executeUpdate();
-        System.out.println("Added class: " + rows + " row(s) affected");
-        con.commit();
-    }
+    public static ResultSet newClass(String[] inputParameters, Connection con) throws SQLException {
+        System.out.println("Adding a new class");
+        /* TO INSERT INTO TABLES */
+        String courseNumber = inputParameters[0];
+        String term = inputParameters[1];
+        String sectionNumber = inputParameters[2];
+        String className = inputParameters[3];
 
-    public static void selectClass(String[] params, Connection con) throws SQLException {
-        if (params.length < 1) {
-            System.out.println("Usage: select-class <courseNumber> [<term> <sectionNumber>]");
-            return;
-        }
-        String sql;
-        PreparedStatement pstmt;
-        if (params.length == 1) {
-            sql = "SELECT ClassID FROM Class WHERE CourseNumber = ? " +
-                  "ORDER BY Term DESC LIMIT 1";
-            pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, params[0]);
-        } else if (params.length == 3) {
-            sql = "SELECT ClassID FROM Class WHERE CourseNumber = ? AND Term = ? AND SectionNumber = ?";
-            pstmt = con.prepareStatement(sql);
-            pstmt.setString(1, params[0]);
-            pstmt.setString(2, params[1]);
-            pstmt.setInt(3, Integer.parseInt(params[2]));
-        } else {
-            System.out.println("Invalid parameters");
-            return;
-        }
-        ResultSet rs = pstmt.executeQuery();
-        if (rs.next()) {
-            selectedClassID = rs.getInt("ClassID");
-            System.out.println("Selected class ID: " + selectedClassID);
-        } else {
-            System.out.println("Class not found");
-            selectedClassID = null;
-        }
-        con.commit();
-
-
-    }
-
-    public static void showClass(Connection con) throws SQLException {
-        if (selectedClassID == null) {
-            System.out.println("No class selected");
-            return;
-        }
-        String sql = "SELECT * FROM Class WHERE ClassID = ?";
-        PreparedStatement pstmt = con.prepareStatement(sql);
-        pstmt.setInt(1, selectedClassID);
-        ResultSet rs = pstmt.executeQuery();
-        if (rs.next()) {
-            System.out.printf("Course: %s, Term: %s, Section: %d, Name: %s, Desc: %s%n",
-                rs.getString("CourseNumber"), rs.getString("Term"),
-                rs.getInt("SectionNumber"), rs.getString("ClassName"),
-                rs.getString("Description"));
-        }
-        con.commit();
-    }
-
-    public static void listClasses(Connection con) throws SQLException {
-        String sql = "SELECT c.*, COUNT(e.StudentID) as StudentCount " +
-                     "FROM Class c LEFT JOIN Enrolled e ON c.ClassID = e.ClassID " +
-                     "GROUP BY c.ClassID";
+        String insert = "INSERT INTO gradeManager.Class (CourseNumber, ClassName, Term, SectionNumber, Description) " +
+                "VALUES ('" + courseNumber + "', '" + className + "', '" + term + "', '" + sectionNumber
+                + "', 'No description')";
+                
         Statement stmt = con.createStatement();
-        ResultSet rs = stmt.executeQuery(sql);
-        while (rs.next()) {
-            System.out.printf("%s %s %d (%s) - %d students%n",
-                rs.getString("CourseNumber"), rs.getString("Term"),
-                rs.getInt("SectionNumber"), rs.getString("ClassName"),
-                rs.getInt("StudentCount"));
-        }
-        con.commit();
-    }
+        int res = stmt.executeUpdate(insert);
 
-    
+        con.commit(); // transaction block ends
+
+        System.out.println("Transaction done!");
+
+        return stmt.executeQuery("select * from `" + "gradeManager" + "`.`Student`;");
+    }
 
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
@@ -161,37 +87,25 @@ public class GradeManager {
                         isRunning = false;
                         break;
                     case "new-class":
-                    newClass(inputParameters, con);
-                    break;
+                        resultSet = newClass(inputParameters, con);
+
+                         break;
 
                     case "list-class":
-                    listClasses(con);
-                //          resultSet=stmt.executeQuery("SELECT * FROM gradeManager.Class;"); 
-                //          ResultSetMetaData rsmd = resultSet.getMetaData();    
-                            
+                         resultSet=stmt.executeQuery("SELECT * FROM '" + dbName + "'.'Class':"); 
+                         ResultSetMetaData rsmd = resultSet.getMetaData();
 
-				// int columnsNumber = rsmd.getColumnCount();
-				// while (resultSet.next()) {
-				// 	for (int i = 1; i <= columnsNumber; i++) {
-				// 		if (i > 1) System.out.print(",  ");
-				// 		String columnValue = resultSet.getString(i);
-				// 		System.out.print(columnValue + " " + rsmd.getColumnName(i));
-				// 	}
-				// 	System.out.println(" ");
-				// }
+				int columnsNumber = rsmd.getColumnCount();
+				while (resultSet.next()) {
+					for (int i = 1; i <= columnsNumber; i++) {
+						if (i > 1) System.out.print(",  ");
+						String columnValue = resultSet.getString(i);
+						System.out.print(columnValue + " " + rsmd.getColumnName(i));
+					}
+					System.out.println(" ");
+				}
 
                     break;
-
-                    case "select-class":
-                        selectClass(inputParameters,con);
-                        break;
-
-                        case "show-class":
-                        showClass(con);
-                        break;
-
-
-
 
                     default:
                         break;
