@@ -137,11 +137,11 @@ public class GradeManager {
             Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.println(
                     "jdbc:mysql://localhost:" + nRemotePort + "/test?verifyServerCertificate=false&useSSL=true");
-            con = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:" + nRemotePort
-                            + "/test?verifyServerCertificate=false&useSSL=true&serverTimezone=UTC",
-                    "msandbox",
-                    strDbPassword);
+                    con = DriverManager.getConnection(
+                        "jdbc:mysql://localhost:" + nRemotePort
+                                + "/" + dbName + "?verifyServerCertificate=false&useSSL=true&serverTimezone=UTC",
+                        "msandbox",
+                        strDbPassword);
             // Print welcome to terminal
             System.out.println("Database [test db] connection succeeded!");
             System.out.println("=======GradeManager=======");
