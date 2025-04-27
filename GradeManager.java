@@ -187,6 +187,38 @@ public class GradeManager {
         return true;
     }
 
+    public static boolean showAssignmentsByCategories(Connection con) throws SQLException {
+        // DEBUG
+        selectedClassID = 1;
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        }
+
+        // SQL Query to get all assignments by category for a class
+        String sql = "SELECT Assignment.Name, Category.Name, Assignment.PointValue FROM Assignment LEFT JOIN Category ON Assignment.categoryID = Category.CategoryID WHERE Assignment.classID = ?;";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, selectedClassID);
+
+        ResultSet resultSet = pstmt.executeQuery();
+
+        // Print out resultSet form executing queries
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+
+        int columnsNumber = rsmd.getColumnCount();
+        while (resultSet.next()) {
+            for (int i = 1; i <= columnsNumber; i++) {
+                if (i > 1)
+                    System.out.print(", ");
+                String columnValue = resultSet.getString(i);
+                System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
+            }
+            System.out.println(" ");
+        }
+
+        return true;
+    }
+
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
@@ -262,6 +294,10 @@ public class GradeManager {
                         break;
                     case "add-category":
                         addCategories(inputParameters, con);
+                        break;
+
+                    case "show-assignment":
+                        showAssignmentsByCategories(con);
                         break;
 
                     default:
