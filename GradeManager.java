@@ -149,11 +149,7 @@ public class GradeManager {
             String strDbPassword = "db41825"; // Database login password
             String dbName = "gradeManager"; // Database name
 
-            /*
-             * STEP 1 and 2
-             * LOAD the Database DRIVER and obtain a CONNECTION
-             * 
-             */
+            // **LOAD the Database DRIVER and obtain a CONNECTION
             Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.println(
                     "jdbc:mysql://localhost:" + nRemotePort + "/test?verifyServerCertificate=false&useSSL=true");
@@ -175,6 +171,10 @@ public class GradeManager {
             GradeManager gm = new GradeManager();
             gm.showMenu();
 
+            // ====Transaction block starts====
+            con.setAutoCommit(false);
+            stmt = con.createStatement(); // responsible for executing queries
+
             // REPL
             while (isRunning) {
                 System.out.println("Enter command: ");
@@ -187,9 +187,6 @@ public class GradeManager {
                 String[] inputParameters = Arrays.copyOfRange(inputTokenized, 1, inputTokenized.length);
 
                 // Different Commands
-                con.setAutoCommit(false);// transaction block starts
-                stmt = con.createStatement();
-
                 switch (cmd) {
                     case "exit":
                         isRunning = false;
@@ -231,6 +228,8 @@ public class GradeManager {
                     default:
                         break;
                 }
+                // After Query execution commit changes
+                con.commit();
 
                 // Print out resultSet form executing queries
                 ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -245,7 +244,12 @@ public class GradeManager {
                     }
                     System.out.println(" ");
                 }
+
             }
+            // ====Transaction block starts====
+            con.setAutoCommit(false);
+            // Close connection
+            con.close();
             scanner.close();
             System.out.println();
 
@@ -254,8 +258,6 @@ public class GradeManager {
              * EXECUTE STATEMENTS (by using Transactions)
              * 
              */
-
-            con.setAutoCommit(false);// transaction block starts
 
             stmt = con.createStatement();
 
