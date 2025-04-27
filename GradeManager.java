@@ -1,4 +1,3 @@
-import java.io.*;
 import java.sql.*;
 import java.util.*;
 
@@ -129,11 +128,63 @@ public class GradeManager {
      * @param con - connection to the SQL database
      * @throws SQLException
      */
-    public static ResultSet showCategories(Connection con) throws SQLException {
+    public static boolean showCategories(Connection con) throws SQLException {
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        }
         // SQL Query to get all categories
-        String showCategoriesSQL = "SELECT Name, Weight, ClassName FROM Category Left Join Class ON Category.classID = Class.ClassID";
+        String showCategoriesSQL = "SELECT Name, Weight FROM Category WHERE Category.classID = ?";
         PreparedStatement pstmt = con.prepareStatement(showCategoriesSQL);
-        return pstmt.executeQuery();
+        pstmt.setInt(1, selectedClassID);
+
+        ResultSet resultSet = pstmt.executeQuery();
+
+        // Print out resultSet form executing queries
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+
+        int columnsNumber = rsmd.getColumnCount();
+        while (resultSet.next()) {
+            for (int i = 1; i <= columnsNumber; i++) {
+                if (i > 1)
+                    System.out.print(", ");
+                String columnValue = resultSet.getString(i);
+                System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
+            }
+            System.out.println(" ");
+        }
+
+        return true;
+    }
+
+    public static boolean addCategories(String[] inputParams, Connection con) throws SQLException {
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        }
+        if (inputParams.length != 2) {
+            System.out.println("Invalid parameters!");
+            System.out.println("Usage: add-category <Name> <weight>");
+            return false;
+        }
+
+        // Parse input
+        String name = inputParams[0];
+        float weight = Float.parseFloat(inputParams[1]);
+
+        // Example
+        // insert into Category (Name, classID, Weight) values ('Exam', 1, 0.5);
+        String addCategorySQL = "INSERT INTO Category (Name, classID, Weight) " +
+                "VALUES (?, ?, ?)";
+
+        PreparedStatement pstmt = con.prepareStatement(addCategorySQL);
+        pstmt.setString(1, name);
+        pstmt.setInt(2, selectedClassID);
+        pstmt.setFloat(3, weight);
+        int rows = pstmt.executeUpdate();
+        System.out.println("Added class: " + rows + " row(s) affected");
+        con.commit();
+        return true;
     }
 
     public static void main(String[] args)
@@ -198,19 +249,6 @@ public class GradeManager {
 
                     case "list-class":
                         listClasses(con);
-                        // resultSet=stmt.executeQuery("SELECT * FROM '" + dbName + "'.'Class':");
-                        // ResultSetMetaData rsmd = resultSet.getMetaData();
-
-                        // int columnsNumber = rsmd.getColumnCount();
-                        // while (resultSet.next()) {
-                        // for (int i = 1; i <= columnsNumber; i++) {
-                        // if (i > 1) System.out.print(", ");
-                        // String columnValue = resultSet.getString(i);
-                        // System.out.print(columnValue + " " + rsmd.getColumnName(i));
-                        // }
-                        // System.out.println(" ");
-                        // }
-
                         break;
 
                     case "select-class":
@@ -222,7 +260,11 @@ public class GradeManager {
                         break;
 
                     case "show-categories":
-                        resultSet = showCategories(con);
+                        showCategories(con);
+
+                        break;
+                    case "add-category":
+                        addCategories(inputParameters, con);
                         break;
 
                     default:
@@ -230,20 +272,6 @@ public class GradeManager {
                 }
                 // After Query execution commit changes
                 con.commit();
-
-                // Print out resultSet form executing queries
-                ResultSetMetaData rsmd = resultSet.getMetaData();
-
-                int columnsNumber = rsmd.getColumnCount();
-                while (resultSet.next()) {
-                    for (int i = 1; i <= columnsNumber; i++) {
-                        if (i > 1)
-                            System.out.print(", ");
-                        String columnValue = resultSet.getString(i);
-                        System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
-                    }
-                    System.out.println(" ");
-                }
 
             }
             // ====Transaction block starts====
@@ -253,74 +281,12 @@ public class GradeManager {
             scanner.close();
             System.out.println();
 
-            /*
-             * STEP 3
-             * EXECUTE STATEMENTS (by using Transactions)
-             * 
-             */
-
-            stmt = con.createStatement();
-
-            /* TO EXECUTE A QUERY */
-
-            // ResultSet resultSet = stmt.executeQuery("select * from `" + dbName +
-            // "`.`Student`;");
-
-            /* TO INSERT INTO TABLES */
-
-            // String insert = "Insert into `"+dbName+"`.`Class` (Name, Code) Values
-            // ('Databases','CS410')";
-            // stmt2 = con.createStatement();
-            // int res = stmt2.executeUpdate(insert);
-
-            // String[] data = {"boise", "nampa"};
-            // stmt2 = insertLocations(con,data);
-
-            // con.commit(); //transaction block ends
-
-            // System.out.println("Transaction done!");
-
-            /*
-             * STEP 4
-             * Use result sets (tables) to navigate through the results
-             * 
-             */
-
-            // ResultSetMetaData rsmd = resultSet.getMetaData();
-
-            // int columnsNumber = rsmd.getColumnCount();
-            // while (resultSet.next()) {
-            // for (int i = 1; i <= columnsNumber; i++) {
-            // if (i > 1)
-            // System.out.print(", ");
-            // String columnValue = resultSet.getString(i);
-            // System.out.print(columnValue + " " + rsmd.getColumnName(i));
-            // }
-            // System.out.println(" ");
-            // }
-
-            System.out.println("Number of rows affected by the insert statement: ");
+            System.out.println("Exiting Grademanager thank you! ");
 
         } catch (SQLException e) {
             System.out.println(e.getMessage());
             con.rollback(); // In case of any exception, we roll back to the database state we had before
                             // starting this transaction
-        } finally {
-
-            /*
-             * STEP 5
-             * CLOSE CONNECTION AND SSH SESSION
-             * 
-             */
-
-            if (stmt != null)
-                stmt.close();
-
-            if (stmt2 != null)
-                stmt2.close();
-
-            con.setAutoCommit(true); // restore dafault mode
-            con.close();
         }
 
     }
