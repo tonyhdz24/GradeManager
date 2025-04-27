@@ -191,15 +191,12 @@ public class GradeManager {
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
         Connection con = null;
-        Statement stmt = null, stmt2 = null;
-        ResultSet resultSet = null;
-
+        Statement stmt = null;
+        // Hardcoded Connection info
+        int nRemotePort = 50939; // Remote port number of the database
+        String strDbPassword = "db41825"; // Database login password
+        String dbName = "gradeManager"; // Database name
         try {
-            // Hardcoded Connection info
-            int nRemotePort = 50939; // Remote port number of the database
-            String strDbPassword = "db41825"; // Database login password
-            String dbName = "gradeManager"; // Database name
-
             // **LOAD the Database DRIVER and obtain a CONNECTION
             Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.println(
