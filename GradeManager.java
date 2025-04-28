@@ -381,7 +381,6 @@ public class GradeManager {
     }
 
     public static boolean addStudent(String[] parameters, Connection con) throws SQLException {
-        selectedClassID = 5;
         // Validate class has been selected
         if (selectedClassID == null) {
             System.out.println("No class selected");
