@@ -232,6 +232,42 @@ public class GradeManager {
         }
     }
 
+    public static boolean studentLookUp(int studentid, Connection con) throws SQLException {
+        String sql = "SELECT * FROM Student WHERE EXISTS (select Student.StudentID FROM Student WHERE Student.StudentID = ?);";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+
+        pstmt.setInt(1, studentid);
+
+        ResultSet resultSet = pstmt.executeQuery();
+        if (resultSet.next()) { // Move to first row
+            String retId = resultSet.getString(1); // 1, not 0
+            System.out.println("Student with ID: " + retId + " Found");
+            return true;
+
+        } else {
+            // Student was not found need to create new student and add them
+            System.out.println("No student found for studentID: " + studentid + "\n Adding...");
+
+            return false;
+        }
+    }
+
+    public static boolean addStudent(String username, String name, int studentid, Connection con) throws SQLException {
+        // String sql = "INSERT INTO Student (StudentID,username, name) VALUES
+        // (111,'rhodgets9', 'Rebeka Hodgets');;";
+        String sql = "INSERT INTO Student (StudentID,username, name) VALUES (? ,? ,?);";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        // insert into Category (Name, classID, Weight) values ('Exam', 1, 0.5);
+        pstmt.setInt(1, studentid);
+        pstmt.setString(2, username);
+        pstmt.setString(3, name);
+        int rows = pstmt.executeUpdate();
+        System.out.println("Student " + username + " Added!!");
+        con.commit();
+
+        return true;
+    }
+
     /**
      * Adds a new assignment to the database for the currently selected class.
      * This method validates the input parameters, retrieves the corresponding
@@ -298,7 +334,10 @@ public class GradeManager {
         return true;
     }
 
-    public static boolean addStudent(String[] parameters, Connection con) {
+    public static boolean addStudent(String[] parameters, Connection con) throws SQLException {
+        // DEBUG
+        selectedClassID = 2;
+
         // Validate class has been selected
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -317,6 +356,27 @@ public class GradeManager {
         int studentid = Integer.parseInt(parameters[1]);
         String last = parameters[2];
         String first = parameters[3];
+
+        // SQL query
+        // EXAMPLE: INSERT INTO Enrolled (StudentID, ClassID) VALUES (1, 1);
+        String addStudentSQL = "INSERT INTO Enrolled (StudentID, ClassID) VALUES (?, ?)";
+
+        PreparedStatement pstmt = con.prepareStatement(addStudentSQL);
+
+        // If student does not exist create a new student based on StudentID
+        boolean studentExist = studentLookUp(studentid, con);
+        if (!studentExist) {
+            // Create new student
+            String name = first + " " + last;
+            addStudent(username, name, studentid, con);
+        }
+        // Setting query parameters
+        pstmt.setInt(1, studentid);
+        pstmt.setInt(2, selectedClassID);
+
+        // Executing query
+        pstmt.executeUpdate();
+        con.commit();
 
         return false;
     }
