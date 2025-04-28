@@ -232,9 +232,23 @@ public class GradeManager {
         }
     }
 
+    /**
+     * Adds a new assignment to the database for the currently selected class.
+     * This method validates the input parameters, retrieves the corresponding
+     * category ID based on the provided category name, and inserts a new record
+     * into the Assignment table with the specified details.
+     *
+     * @param parameters An array of Strings representing assignment details in the
+     *                   order:
+     *                   [assignment name, category name, description, points].
+     * @param con        The active database connection to use for executing the
+     *                   insert operation.
+     * @return true if the assignment was successfully added; false
+     *         if no class is selected or the input parameters are invalid.
+     * @throws SQLException If a database access error occurs during the insertion.
+     */
     public static boolean addAssignment(String[] parameters, Connection con) throws SQLException {
-        // DEBUG
-        selectedClassID = 1;
+
         if (selectedClassID == null) {
             System.out.println("No class selected");
             return false;
@@ -282,6 +296,29 @@ public class GradeManager {
         con.commit();
 
         return true;
+    }
+
+    public static boolean addStudent(String[] parameters, Connection con) {
+        // Validate class has been selected
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        }
+        // Validate parameters
+        System.out.println(parameters.length);
+        if (parameters.length != 4) {
+            System.out.println("Invalid parameters!");
+            System.out.println("Usage: add-student <username> <studentid> <Last> <First>");
+            return false;
+        }
+
+        // parse inputs
+        String username = parameters[0];
+        int studentid = Integer.parseInt(parameters[1]);
+        String last = parameters[2];
+        String first = parameters[3];
+
+        return false;
     }
 
     public static void main(String[] args)
@@ -367,7 +404,9 @@ public class GradeManager {
                     case "add-":
                         addAssignment(inputParameters, con);
                         break;
-
+                    case "add-student":
+                        addStudent(inputParameters, con);
+                        break;
                     default:
                         break;
                 }
