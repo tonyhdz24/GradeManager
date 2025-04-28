@@ -188,8 +188,6 @@ public class GradeManager {
     }
 
     public static boolean showAssignmentsByCategories(Connection con) throws SQLException {
-        // DEBUG
-        selectedClassID = 1;
         if (selectedClassID == null) {
             System.out.println("No class selected");
             return false;
@@ -219,15 +217,82 @@ public class GradeManager {
         return true;
     }
 
+    public static int getCategoryID(String category, int classId, Connection con) throws SQLException {
+        String sql = "SELECT Category.CategoryID FROM Category WHERE Category.classID = ? AND Category.Name = ?;";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, classId);
+        pstmt.setString(2, category);
+
+        ResultSet resultSet = pstmt.executeQuery();
+        if (resultSet.next()) { // Move to first row
+            String retId = resultSet.getString(1); // 1, not 0
+            return Integer.parseInt(retId);
+        } else {
+            throw new SQLException("No category found for name: " + category + " and classID: " + classId);
+        }
+    }
+
+    public static boolean addAssignment(String[] parameters, Connection con) throws SQLException {
+        // DEBUG
+        selectedClassID = 1;
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        }
+
+        // Validate input parameters
+        System.out.println(parameters.length);
+        if (parameters.length != 4) {
+            System.out.println("Invalid parameters!");
+            System.out.println("Usage: add- <assignment name> <Category> <Description> <points>");
+            return false;
+        }
+
+        // Parse input
+        // add- assignment name Category Description points
+        String assignmentName = parameters[0];
+        String category = parameters[1]; // category name
+        String description = parameters[2];
+        int points = Integer.parseInt(parameters[3]);
+
+        // Getting category id from input category name
+        System.out.println("Before");
+        int categoryID = getCategoryID(category, selectedClassID, con);
+        System.out.println("Category: " + categoryID);
+
+        // Example
+
+        // insert into Assignment (Name, PointValue, categoryID, classID, Description)
+        // values ('Homework-1', 10, 2, 1, 'Suspendisse potenti. Cras in purus eu magna
+        // vulputate luctus. Cum sociis natoque penatibus et magnis dis parturient
+        // montes, nascetur ridiculus mus.');
+        String addAssignmentSQL = "INSERT INTO Assignment (Name, PointValue, categoryID, classID, Description) " +
+                "VALUES (?, ?, ?, ? ,?)";
+
+        PreparedStatement pstmt = con.prepareStatement(addAssignmentSQL);
+
+        pstmt.setString(1, assignmentName);
+        pstmt.setInt(2, points);
+        pstmt.setInt(3, categoryID);
+        pstmt.setInt(4, selectedClassID);
+        pstmt.setString(5, description);
+
+        // Execute command
+        pstmt.executeUpdate();
+        con.commit();
+
+        return true;
+    }
+
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
         Connection con = null;
-        Statement stmt = null;
         // Hardcoded Connection info
         int nRemotePort = 50939; // Remote port number of the database
         String strDbPassword = "db41825"; // Database login password
         String dbName = "gradeManager"; // Database name
+        Statement stmt = null;
         try {
             // **LOAD the Database DRIVER and obtain a CONNECTION
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -298,6 +363,9 @@ public class GradeManager {
 
                     case "show-assignment":
                         showAssignmentsByCategories(con);
+                        break;
+                    case "add-":
+                        addAssignment(inputParameters, con);
                         break;
 
                     default:
