@@ -334,10 +334,54 @@ public class GradeManager {
         return true;
     }
 
-    public static boolean addStudent(String[] parameters, Connection con) throws SQLException {
-        // DEBUG
-        selectedClassID = 2;
+    public static int getStudentID(String username, Connection con) throws SQLException {
+        String sql = "select Student.StudentID FROM Student WHERE Student.username = ?;";
+        PreparedStatement pstmt = con.prepareStatement(sql);
 
+        pstmt.setString(1, username);
+
+        ResultSet resultSet = pstmt.executeQuery();
+        if (resultSet.next()) { // Move to first row
+            String retId = resultSet.getString(1); // 1, not 0
+            System.out.println("Student with ID: " + retId + " Found");
+            return Integer.parseInt(retId);
+
+        } else {
+            // Student was not found need to create new student and add them
+            System.out.println("No student found for student user name: " + username + "\n Try again...");
+
+            return -1;
+        }
+    }
+
+    public static boolean addStudentUsername(String[] parameters, Connection con) throws SQLException {
+        String userName = parameters[0];
+        // Based on username get studentID
+        // IF there is no student with that username Throw an error
+        int studentID = getStudentID(userName, con);
+        if (studentID == -1) {
+            return false;
+        }
+
+        // SQL query
+        // EXAMPLE: INSERT INTO Enrolled (StudentID, ClassID) VALUES (1, 1);
+        String addStudentSQL = "INSERT INTO Enrolled (StudentID, ClassID) VALUES (?, ?)";
+
+        PreparedStatement pstmt = con.prepareStatement(addStudentSQL);
+
+        // Setting query parameters
+        pstmt.setInt(1, studentID);
+        pstmt.setInt(2, selectedClassID);
+
+        // Executing query
+        pstmt.executeUpdate();
+        con.commit();
+        return true;
+
+    }
+
+    public static boolean addStudent(String[] parameters, Connection con) throws SQLException {
+        selectedClassID = 5;
         // Validate class has been selected
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -345,7 +389,11 @@ public class GradeManager {
         }
         // Validate parameters
         System.out.println(parameters.length);
-        if (parameters.length != 4) {
+        if (parameters.length == 1) {
+            // Entered only username
+            addStudentUsername(parameters, con);
+            return true;
+        } else if (parameters.length != 4) {
             System.out.println("Invalid parameters!");
             System.out.println("Usage: add-student <username> <studentid> <Last> <First>");
             return false;
