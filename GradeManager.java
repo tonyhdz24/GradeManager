@@ -428,6 +428,161 @@ public class GradeManager {
         return false;
     }
 
+    public static void studentGrades(String[] params, Connection con) throws SQLException {
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return;
+        }
+        if (params.length < 1) {
+            System.out.println("Usage: student-grades <username>");
+            return;
+        }
+        String username = params[0];
+
+        // Get StudentID from username
+        String studentSql = "SELECT StudentID FROM Student WHERE username = ?";
+        PreparedStatement studentPstmt = con.prepareStatement(studentSql);
+        studentPstmt.setString(1, username);
+        ResultSet studentRs = studentPstmt.executeQuery();
+        if (!studentRs.next()) {
+            System.out.println("Student not found");
+            return;
+        }
+        int studentID = studentRs.getInt("StudentID");
+
+        // Check enrollment
+        String enrollSql = "SELECT * FROM Enrolled WHERE StudentID = ? AND ClassID = ?";
+        PreparedStatement enrollPstmt = con.prepareStatement(enrollSql);
+        enrollPstmt.setInt(1, studentID);
+        enrollPstmt.setInt(2, selectedClassID);
+        ResultSet enrollRs = enrollPstmt.executeQuery();
+        if (!enrollRs.next()) {
+            System.out.println("Student not enrolled in this class");
+            return;
+        }
+
+        // Fetch assignments, categories, and grades
+        String sql = "SELECT c.Name AS CategoryName, a.Name AS AssignmentName, a.PointValue, comp.Grade " +
+                     "FROM Assignment a " +
+                     "JOIN Category c ON a.categoryID = c.CategoryID " +
+                     "LEFT JOIN Completed comp ON a.AssignmentID = comp.AssignmentID AND comp.StudentID = ? " +
+                     "WHERE a.classID = ? " +
+                     "ORDER BY c.Name, a.Name";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, studentID);
+        pstmt.setInt(2, selectedClassID);
+        ResultSet rs = pstmt.executeQuery();
+
+        // Group by category
+        Map<String, List<String>> categoryAssignments = new LinkedHashMap<>();
+        Map<String, Double> categoryEarned = new HashMap<>();
+        Map<String, Double> categoryPossible = new HashMap<>();
+        String currentCategory = null;
+
+        while (rs.next()) {
+            String category = rs.getString("CategoryName");
+            String assignment = rs.getString("AssignmentName");
+            int pointValue = rs.getInt("PointValue");
+            Double grade = rs.getObject("Grade") != null ? rs.getDouble("Grade") : null;
+
+            if (!category.equals(currentCategory)) {
+                currentCategory = category;
+                categoryAssignments.put(category, new ArrayList<>());
+                categoryEarned.put(category, 0.0);
+                categoryPossible.put(category, 0.0);
+            }
+
+            String display = assignment + " (" + pointValue + " pts): " + (grade != null ? grade : "N/A");
+            categoryAssignments.get(category).add(display);
+
+            if (grade != null) {
+                categoryEarned.put(category, categoryEarned.get(category) + grade);
+            }
+            categoryPossible.put(category, categoryPossible.get(category) + pointValue);
+        }
+
+        // Calculate and display results
+        double overallGrade = 0.0;
+        for (String category : categoryAssignments.keySet()) {
+            double earned = categoryEarned.get(category);
+            double possible = categoryPossible.get(category);
+            double categoryWeight = getCategoryWeight(category, con);
+            double categoryScore = (possible > 0) ? (earned / possible) * categoryWeight : 0;
+            overallGrade += categoryScore;
+
+            System.out.println("Category: " + category);
+            for (String assignment : categoryAssignments.get(category)) {
+                System.out.println("  " + assignment);
+            }
+            System.out.printf("  Subtotal: %.2f / %.2f (%.2f%% of total)%n", earned, possible, categoryWeight);
+        }
+
+        System.out.printf("Overall Grade: %.2f%%n", overallGrade);
+        con.commit();
+    }
+
+    public static void gradebook(Connection con) throws SQLException {
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return;
+        }
+
+        // Fetch enrolled students
+        String studentSql = "SELECT s.StudentID, s.username, s.name " +
+                           "FROM Student s JOIN Enrolled e ON s.StudentID = e.StudentID " +
+                           "WHERE e.ClassID = ?";
+        PreparedStatement studentPstmt = con.prepareStatement(studentSql);
+        studentPstmt.setInt(1, selectedClassID);
+        ResultSet studentRs = studentPstmt.executeQuery();
+
+        while (studentRs.next()) {
+            int studentID = studentRs.getInt("StudentID");
+            String username = studentRs.getString("username");
+            String name = studentRs.getString("name");
+            double totalGrade = calculateTotalGrade(studentID, con);
+
+            System.out.printf("%s (%s): %s - %.2f%%%n", username, studentID, name, totalGrade);
+        }
+        con.commit();
+    }
+
+    private static double getCategoryWeight(String categoryName, Connection con) throws SQLException {
+        String sql = "SELECT Weight FROM Category WHERE Name = ? AND classID = ?";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setString(1, categoryName);
+        pstmt.setInt(2, selectedClassID);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            return rs.getDouble("Weight");
+        }
+        return 0.0;
+    }
+
+    private static double calculateTotalGrade(int studentID, Connection con) throws SQLException {
+        String sql = "SELECT c.Name AS CategoryName, SUM(COALESCE(comp.Grade, 0)) AS Earned, " +
+                     "SUM(a.PointValue) AS Possible, c.Weight " +
+                     "FROM Assignment a " +
+                     "JOIN Category c ON a.categoryID = c.CategoryID " +
+                     "LEFT JOIN Completed comp ON a.AssignmentID = comp.AssignmentID AND comp.StudentID = ? " +
+                     "WHERE a.classID = ? " +
+                     "GROUP BY c.CategoryID, c.Name, c.Weight";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, studentID);
+        pstmt.setInt(2, selectedClassID);
+        ResultSet rs = pstmt.executeQuery();
+
+        double totalGrade = 0.0;
+        while (rs.next()) {
+            double earned = rs.getDouble("Earned");
+            double possible = rs.getDouble("Possible");
+            double weight = rs.getDouble("Weight");
+            if (possible > 0) {
+                totalGrade += (earned / possible) * weight;
+            }
+        }
+        return totalGrade;
+    }
+
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
@@ -513,6 +668,12 @@ public class GradeManager {
                         break;
                     case "add-student":
                         addStudent(inputParameters, con);
+                        break;
+                    case "student-grades":  
+                        studentGrades(inputParameters, con);    
+                        break;
+                    case "gradebook":   
+                        gradebook(con);
                         break;
                     default:
                         break;
