@@ -517,7 +517,7 @@ public class GradeManager {
             System.out.printf("  Subtotal: %.2f / %.2f (%.2f%% of total)%n", earned, possible, categoryWeight);
         }
 
-        System.out.printf("Overall Grade: %.2f%%n", overallGrade);
+        System.out.printf("Overall Grade: %.2f%%", overallGrade);
         con.commit();
     }
 
