@@ -501,23 +501,27 @@ public class GradeManager {
             categoryPossible.put(category, categoryPossible.get(category) + pointValue);
         }
 
-        // Calculate and display results
-        double overallGrade = 0.0;
-        for (String category : categoryAssignments.keySet()) {
-            double earned = categoryEarned.get(category);
-            double possible = categoryPossible.get(category);
-            double categoryWeight = getCategoryWeight(category, con);
-            double categoryScore = (possible > 0) ? (earned / possible) * categoryWeight : 0;
-            overallGrade += categoryScore;
+       // Calculate and display results
+double overallGrade = 0.0;
+double totalWeight = 0.0;
+for (String category : categoryAssignments.keySet()) {
+    double earned = categoryEarned.get(category);
+    double possible = categoryPossible.get(category);
+    double categoryWeight = getCategoryWeight(category, con);
+    double categoryPercentage = (possible > 0) ? (earned / possible) * 100 : 0;
+    double weightedScore = categoryPercentage * categoryWeight / 100;
+    overallGrade += weightedScore;
+    totalWeight += categoryWeight;
 
-            System.out.println("Category: " + category);
-            for (String assignment : categoryAssignments.get(category)) {
-                System.out.println("  " + assignment);
-            }
-            System.out.printf("  Subtotal: %.2f / %.2f (%.2f%% of total)%n", earned, possible, categoryWeight);
-        }
+    System.out.println("Category: " + category);
+    for (String assignment : categoryAssignments.get(category)) {
+        System.out.println("  " + assignment);
+    }
+    System.out.printf("  Subtotal: %.2f / %.2f (%.2f%% of total)%n", 
+        earned, possible, categoryWeight * 100);
+}
 
-        System.out.printf("Overall Grade: %.2f%%", overallGrade);
+System.out.printf("Overall Grade: %.2f%%%n", overallGrade);
         con.commit();
     }
 
@@ -621,7 +625,7 @@ public class GradeManager {
 
             // REPL
             while (isRunning) {
-                System.out.println("Enter command: ");
+                System.out.println("\n Enter command: \n ");
                 // Get user input and tokenize it
                 String inputString = scanner.nextLine().toLowerCase(); // Read user input
                 String[] inputTokenized = inputString.split(" ");
