@@ -380,6 +380,43 @@ public class GradeManager {
 
     }
 
+    /**
+     * Shows all students enrolled in the current class
+     * 
+     * @param con - Connection to the Database
+     * @return boolean where transaction was successful
+     * @throws SQLException
+     */
+    public static boolean showStudents(Connection con) throws SQLException {
+        selectedClassID = 2;
+        // Validate class has been selected
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        }
+        // SQL query to get all students in a class
+        String sql = "SELECT Student.name FROM gradeManager.Enrolled join gradeManager.Student on Enrolled.StudentID = Student.StudentID WHERE Enrolled.ClassID = ?;";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, selectedClassID);
+
+        // Result set of all students enrolled in selected class
+        ResultSet resultSet = pstmt.executeQuery();
+        // Print out resultSet form executing queries
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+        int columnsNumber = rsmd.getColumnCount();
+        while (resultSet.next()) {
+            for (int i = 1; i <= columnsNumber; i++) {
+                if (i > 1)
+                    System.out.print(", ");
+                String columnValue = resultSet.getString(i);
+                System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
+            }
+            System.out.println(" ");
+        }
+
+        return true;
+    }
+
     public static boolean addStudent(String[] parameters, Connection con) throws SQLException {
         // Validate class has been selected
         if (selectedClassID == null) {
@@ -463,11 +500,11 @@ public class GradeManager {
 
         // Fetch assignments, categories, and grades
         String sql = "SELECT c.Name AS CategoryName, a.Name AS AssignmentName, a.PointValue, comp.Grade " +
-                     "FROM Assignment a " +
-                     "JOIN Category c ON a.categoryID = c.CategoryID " +
-                     "LEFT JOIN Completed comp ON a.AssignmentID = comp.AssignmentID AND comp.StudentID = ? " +
-                     "WHERE a.classID = ? " +
-                     "ORDER BY c.Name, a.Name";
+                "FROM Assignment a " +
+                "JOIN Category c ON a.categoryID = c.CategoryID " +
+                "LEFT JOIN Completed comp ON a.AssignmentID = comp.AssignmentID AND comp.StudentID = ? " +
+                "WHERE a.classID = ? " +
+                "ORDER BY c.Name, a.Name";
         PreparedStatement pstmt = con.prepareStatement(sql);
         pstmt.setInt(1, studentID);
         pstmt.setInt(2, selectedClassID);
@@ -529,8 +566,8 @@ public class GradeManager {
 
         // Fetch enrolled students
         String studentSql = "SELECT s.StudentID, s.username, s.name " +
-                           "FROM Student s JOIN Enrolled e ON s.StudentID = e.StudentID " +
-                           "WHERE e.ClassID = ?";
+                "FROM Student s JOIN Enrolled e ON s.StudentID = e.StudentID " +
+                "WHERE e.ClassID = ?";
         PreparedStatement studentPstmt = con.prepareStatement(studentSql);
         studentPstmt.setInt(1, selectedClassID);
         ResultSet studentRs = studentPstmt.executeQuery();
@@ -560,12 +597,12 @@ public class GradeManager {
 
     private static double calculateTotalGrade(int studentID, Connection con) throws SQLException {
         String sql = "SELECT c.Name AS CategoryName, SUM(COALESCE(comp.Grade, 0)) AS Earned, " +
-                     "SUM(a.PointValue) AS Possible, c.Weight " +
-                     "FROM Assignment a " +
-                     "JOIN Category c ON a.categoryID = c.CategoryID " +
-                     "LEFT JOIN Completed comp ON a.AssignmentID = comp.AssignmentID AND comp.StudentID = ? " +
-                     "WHERE a.classID = ? " +
-                     "GROUP BY c.CategoryID, c.Name, c.Weight";
+                "SUM(a.PointValue) AS Possible, c.Weight " +
+                "FROM Assignment a " +
+                "JOIN Category c ON a.categoryID = c.CategoryID " +
+                "LEFT JOIN Completed comp ON a.AssignmentID = comp.AssignmentID AND comp.StudentID = ? " +
+                "WHERE a.classID = ? " +
+                "GROUP BY c.CategoryID, c.Name, c.Weight";
         PreparedStatement pstmt = con.prepareStatement(sql);
         pstmt.setInt(1, studentID);
         pstmt.setInt(2, selectedClassID);
@@ -669,10 +706,13 @@ public class GradeManager {
                     case "add-student":
                         addStudent(inputParameters, con);
                         break;
-                    case "student-grades":  
-                        studentGrades(inputParameters, con);    
+                    case "show-students":
+                        showStudents(con);
                         break;
-                    case "gradebook":   
+                    case "student-grades":
+                        studentGrades(inputParameters, con);
+                        break;
+                    case "gradebook":
                         gradebook(con);
                         break;
                     default:
