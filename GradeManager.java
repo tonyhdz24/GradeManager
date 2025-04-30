@@ -334,6 +334,15 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Returns a students ID given their username
+     * 
+     * 
+     * @param username - Student username
+     * @param con      - Connection to database
+     * @return StudentID or if no student was found returns -1
+     * @throws SQLException
+     */
     public static int getStudentID(String username, Connection con) throws SQLException {
         String sql = "select Student.StudentID FROM Student WHERE Student.username = ?;";
         PreparedStatement pstmt = con.prepareStatement(sql);
@@ -501,7 +510,7 @@ public class GradeManager {
         pstmt.executeUpdate();
         con.commit();
 
-        return false;
+        return true;
     }
 
     public static void studentGrades(String[] params, Connection con) throws SQLException {
@@ -659,6 +668,110 @@ public class GradeManager {
         return totalGrade;
     }
 
+    /**
+     * Assign a grade for a student for an assignment
+     * If student already has a grade for said assgnemtn update it. Grade can not
+     * excede the assignment total points
+     * 
+     * @param inputParameters - String array containing assignment name, student
+     *                        username
+     *                        and the assignment grade
+     * @param con             - Connection to the database
+     * @return
+     * @throws SQLException
+     */
+    public static boolean grade(String[] inputParameters, Connection con) throws SQLException {
+        selectedClassID = 1;
+        // Validate class has been selected
+        // if (selectedClassID == null) {
+        // System.out.println("No class selected");
+        // return false;
+        // } else if (inputParameters.length != 3) {
+        // System.out.println("Invalid parameters\nUsage: grade <assignmentname>
+        // <username> <grade>");
+        // return false;
+        // }
+
+        // parsing input array
+        String assignmentName = "Homework-1";
+        String username = "csteanson0";
+        int grade = 9;
+        // String assignmentName = inputParameters[0];
+        // String username = inputParameters[1];
+        // int grade = Integer.parseInt(inputParameters[2]);
+        // 1. Check that the assignment exists
+        // IF is doesnt return false
+        // then get its id
+        int assignmentID = getAssignmentID(assignmentName, con);
+
+        // DEBUG
+        System.out.println("Assignment ID " + assignmentID);
+        if (assignmentID == -1) {
+            System.out.println("No assignment found with name " + assignmentName);
+            return false;
+        }
+
+        // 2. Get student id based on input username
+        int studentID = getStudentID(username, con);
+        if (studentID == -1) {
+            System.out.println("No student found with username " + username);
+            return false;
+        }
+
+        // 3. Make sure that the grade doesnt exceeds the points value for the
+        // assignment
+        // print warning and stop
+        int assignmentPointValue = getAssignmentPoints(assignmentID, con);
+
+        if (grade > assignmentPointValue) {
+            System.out.println(
+                    "WARNING input grade " + grade + " greater than max point value of " + assignmentPointValue);
+            return false;
+        }
+
+        // SQL query
+        // EXAMPLE: insert into Completed (StudentID, AssignmentID, Grade) values (1,
+        // 1,
+        // 85);
+        String gradeSQL = "INSERT INTO Completed (StudentID, AssignmentID, Grade) VALUES (?, ?, ?)";
+
+        PreparedStatement pstmt = con.prepareStatement(gradeSQL);
+
+        // Setting query parameters
+        pstmt.setInt(1, studentID);
+        pstmt.setInt(2, assignmentID);
+        pstmt.setInt(3, selectedClassID);
+
+        // Executing query
+        pstmt.executeUpdate();
+        con.commit();
+
+        return true;
+    }
+
+    public static int getAssignmentID(String assignmentName, Connection con) throws SQLException {
+        String sql = "SELECT Assignment.AssignmentID FROM gradeManager.Assignment where Assignment.Name = \""
+                + assignmentName + "\";";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            return rs.getInt("AssignmentID");
+        }
+        return -1;
+    }
+
+    public static int getAssignmentPoints(int assignmentID, Connection con) throws SQLException {
+        String sql = "SELECT Assignment.PointValue FROM gradeManager.Assignment where Assignment.AssignmentID = ?;";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, assignmentID);
+        ResultSet rs = pstmt.executeQuery();
+        if (rs.next()) {
+            return rs.getInt("PointValue");
+        }
+        return -1;
+
+    }
+
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
@@ -747,6 +860,9 @@ public class GradeManager {
                         break;
                     case "show-students":
                         showStudents(inputParameters, con);
+                        break;
+                    case "grade":
+                        grade(inputParameters, con);
                         break;
                     case "student-grades":
                         studentGrades(inputParameters, con);
