@@ -381,18 +381,57 @@ public class GradeManager {
     }
 
     /**
+     * Shows all students enrolled in the current class in which the student's
+     * name contains a string
+     * 
+     * @param inputString - The string we want to look for in the student's name
+     * @param con         - Connection to the Database
+     * @return boolean where transaction was successful
+     * @throws SQLException
+     */
+    public static boolean showStudentsContainsString(String[] inpuString, Connection con) throws SQLException {
+        String lookingForStr = inpuString[0];
+        // SQL query to get all students in a class
+        String sql = "SELECT Student.name FROM gradeManager.Enrolled JOIN gradeManager.Student ON Enrolled.StudentID = Student.StudentID WHERE Enrolled.ClassID = ? AND (LOWER(Student.name) LIKE '%"
+                + lookingForStr + "%' OR LOWER(Student.username) LIKE '%" + lookingForStr + "%');";
+        PreparedStatement pstmt = con.prepareStatement(sql);
+        pstmt.setInt(1, selectedClassID);
+
+        // Result set of all students enrolled in selected class
+        ResultSet resultSet = pstmt.executeQuery();
+        // Print out resultSet form executing queries
+        ResultSetMetaData rsmd = resultSet.getMetaData();
+        int columnsNumber = rsmd.getColumnCount();
+        while (resultSet.next()) {
+            for (int i = 1; i <= columnsNumber; i++) {
+                if (i > 1)
+                    System.out.print(", ");
+                String columnValue = resultSet.getString(i);
+                System.out.print(rsmd.getColumnName(i) + ": " + columnValue);
+            }
+            System.out.println(" ");
+        }
+
+        return true;
+    }
+
+    /**
      * Shows all students enrolled in the current class
      * 
      * @param con - Connection to the Database
      * @return boolean where transaction was successful
      * @throws SQLException
      */
-    public static boolean showStudents(Connection con) throws SQLException {
+    public static boolean showStudents(String[] inputParameters, Connection con) throws SQLException {
         selectedClassID = 2;
         // Validate class has been selected
         if (selectedClassID == null) {
             System.out.println("No class selected");
             return false;
+        }
+        if (inputParameters.length == 1) {
+            showStudentsContainsString(inputParameters, con);
+            return true;
         }
         // SQL query to get all students in a class
         String sql = "SELECT Student.name FROM gradeManager.Enrolled join gradeManager.Student on Enrolled.StudentID = Student.StudentID WHERE Enrolled.ClassID = ?;";
@@ -707,7 +746,7 @@ public class GradeManager {
                         addStudent(inputParameters, con);
                         break;
                     case "show-students":
-                        showStudents(con);
+                        showStudents(inputParameters, con);
                         break;
                     case "student-grades":
                         studentGrades(inputParameters, con);
@@ -716,6 +755,7 @@ public class GradeManager {
                         gradebook(con);
                         break;
                     default:
+                        System.out.println("Invalid command: " + cmd);
                         break;
                 }
                 // After Query execution commit changes
