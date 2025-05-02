@@ -1,11 +1,29 @@
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GradeManager {
     private static Integer selectedClassID = null;
 
-    public void showMenu() {
-        System.out.println("Exit: Close GradeManager");
+    public static void showMenu() {
+        System.out.println("======= GradeManager Menu =======");
+        System.out.println("1. Create a class: new-class <ClassName> <Term> <Section> <Subject>");
+        System.out.println("2. List all classes: list-classes");
+        System.out.println("3. Select a class: select-class <ClassName> <Term> <Section>");
+        System.out.println("4. Show current class: show-class");
+        System.out.println("5. Show categories: show-categories");
+        System.out.println("6. Add category: add-category <Name> <Weight>");
+        System.out.println("7. Show assignments: show-assignments");
+        System.out.println("8. Add assignment: add-assignment <Name> <Category> <Description> <Points>");
+        System.out.println("9. Add student: add-student <Username> <StudentId> <LastName> <FirstName>");
+        System.out.println("10. Show students: show-students");
+        System.out.println("11. Grade student: grade <AssignmentName> <Username> <Grade>");
+        System.out.println("12. Show student grades: student-grades <Username>");
+        System.out.println("13. Show gradebook: gradebook");
+        System.out.println("14. Exit: Close GradeManager");
+        System.out.println("15. Menu: Show Menu again");
+        System.out.println("=================================");
     }
 
     // public static ResultSet newClass(String[] inputParameters, Connection con)
@@ -39,6 +57,11 @@ public class GradeManager {
             System.out.println("Usage: new-class <courseNumber> <term> <sectionNumber> \"<className>\"");
             return;
         }
+
+        for (String string : params) {
+            System.out.println(string);
+        }
+
         String courseNumber = params[0];
         String term = params[1];
         int sectionNumber = Integer.parseInt(params[2]);
@@ -778,6 +801,27 @@ public class GradeManager {
 
     }
 
+    public static String[] parseInput(String input) {
+        // Regular expression that captures strings (with or without quotes) and treats
+        // them as tokens
+        String regex = "\"([^\"]*)\"|([^\\s\"]+)";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+
+        List<String> tokens = new ArrayList<>();
+        while (matcher.find()) {
+            if (matcher.group(1) != null) {
+                // Add quoted string as a single token
+                tokens.add(matcher.group(1));
+            } else {
+                // Add unquoted token
+                tokens.add(matcher.group(2));
+            }
+        }
+
+        return tokens.toArray(new String[0]); // Convert list to array
+    }
+
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
@@ -800,15 +844,23 @@ public class GradeManager {
 
             // Print welcome to terminal
             System.out.println("Database [test db] connection succeeded!");
-            System.out.println("=======GradeManager=======");
-            System.out.println("Welcome to GradeManager");
+            // System.out.println("=======GradeManager=======");
+            String banner = "   ______               __     __  ___                                 \n" +
+                    "  / ____/________ _____/ /__  /  |/  /___ _____  ____ _____ ____  _____\n" +
+                    " / / __/ ___/ __ `/ __  / _ \\/ /|_/ / __ `/ __ \\/ __ `/ __ `/ _ \\/ ___/\n" +
+                    "/ /_/ / /  / /_/ / /_/ /  __/ /  / / /_/ / / / / /_/ / /_/ /  __/ /    \n" +
+                    "\\____/_/   \\__,_/\\__,_/\\___/_/  /_/\\__,_/_/ /_/\\__,_/\\__, /\\___/_/     \n" +
+                    "                                                    /____/              \n";
+
+            System.out.println(banner);
+            System.out.println("Welcome!");
 
             // Read user input for command
             Scanner scanner = new Scanner(System.in); // Create a Scanner object
             boolean isRunning = true;
 
             GradeManager gm = new GradeManager();
-            gm.showMenu();
+            GradeManager.showMenu();
 
             // ====Transaction block starts====
             con.setAutoCommit(false);
@@ -817,9 +869,11 @@ public class GradeManager {
             // REPL
             while (isRunning) {
                 System.out.println("\nEnter command: ");
+
                 // Get user input and tokenize it
                 String inputString = scanner.nextLine().toLowerCase(); // Read user input
-                String[] inputTokenized = inputString.split(" ");
+                String[] inputTokenized = parseInput(inputString);
+
                 String cmd = inputTokenized[0];
 
                 // Store the rest of the input parametes in an array
@@ -876,8 +930,12 @@ public class GradeManager {
                     case "gradebook":
                         gradebook(con);
                         break;
+                    case "menu":
+                        showMenu();
+                        break;
                     default:
                         System.out.println("Invalid command: " + cmd);
+                        showMenu();
                         break;
                 }
                 // After Query execution commit changes
