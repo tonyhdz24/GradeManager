@@ -1044,15 +1044,10 @@ public class GradeManager {
         }
 
         // parsing input array
-        String assignmentName = "Homework-1";
-        String username = "csteanson0";
-        int grade = 9;
-        // String assignmentName = inputParameters[0];
-        // String username = inputParameters[1];
-        // int grade = Integer.parseInt(inputParameters[2]);
-        // 1. Check that the assignment exists
-        // IF is doesnt return false
-        // then get its id
+        String assignmentName = inputParameters[0];
+        String username = inputParameters[1];
+        int grade = Integer.parseInt(inputParameters[2]);
+
         int assignmentID = getAssignmentID(assignmentName, con);
 
         if (assignmentID == -1) {
