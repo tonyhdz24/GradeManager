@@ -57,11 +57,6 @@ public class GradeManager {
             System.out.println("Usage: new-class <courseNumber> <term> <sectionNumber> \"<className>\"");
             return;
         }
-
-        for (String string : params) {
-            System.out.println(string);
-        }
-
         String courseNumber = params[0];
         String term = params[1];
         int sectionNumber = Integer.parseInt(params[2]);
@@ -136,6 +131,7 @@ public class GradeManager {
         PreparedStatement pstmt = con.prepareStatement(sql);
         pstmt.setInt(1, selectedClassID);
         ResultSet rs = pstmt.executeQuery();
+
         if (rs.next()) {
             System.out.printf("Course: %s, Term: %s, Section: %d, Name: %s, Desc: %s%n",
                     rs.getString("CourseNumber"), rs.getString("Term"),
@@ -889,7 +885,7 @@ public class GradeManager {
 
                         break;
 
-                    case "list-class":
+                    case "list-classes":
                         listClasses(con);
                         break;
 
