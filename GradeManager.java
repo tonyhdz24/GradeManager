@@ -3,9 +3,109 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * The GradeManager class provides functionality to manage classes, students,
+ * assignments, and grades
+ * in a grade management system. The class supports operations such as adding
+ * new classes, listing
+ * classes, managing students, assigning grades, and generating grade reports.
+ * This class operates in
+ * a command-line interface (CLI) mode, where the user can interact with the
+ * program using various commands.
+ * 
+ * The program interacts with a MySQL database to store and retrieve data. It
+ * includes commands for:
+ * <ul>
+ * <li>Class Management: Creating and selecting classes</li>
+ * <li>Category and Assignment Management: Adding categories and
+ * assignments</li>
+ * <li>Student Management: Adding students, viewing students, and grading
+ * assignments</li>
+ * <li>Grade Reporting: Generating reports for individual students or the entire
+ * class</li>
+ * <li>Grade Calculation: Computing grades based on assignment categories</li>
+ * </ul>
+ * 
+ * <p>
+ * The GradeManager class is designed to be run from the command line, with the
+ * user providing
+ * commands for the system to execute. The commands are parsed, and
+ * corresponding actions are performed
+ * in the database to update or retrieve information.
+ * </p>
+ * 
+ * <p>
+ * All database interactions are executed within a transaction to ensure
+ * consistency. If an error
+ * occurs during any operation, the transaction is rolled back, and the user is
+ * notified of the issue.
+ * </p>
+ * 
+ * <p>
+ * This class supports the following commands:
+ * </p>
+ * <ul>
+ * <li><b>new-class</b>: Creates a new class</li>
+ * <li><b>list-class</b>: Lists all available classes</li>
+ * <li><b>select-class</b>: Selects a specific class</li>
+ * <li><b>add-student</b>: Adds or enrolls a student</li>
+ * <li><b>grade</b>: Assigns a grade for a student on a specific assignment</li>
+ * <li><b>show-students</b>: Displays a list of students in the current
+ * class</li>
+ * <li><b>show-categories</b>: Displays the categories and weights for
+ * assignments</li>
+ * <li><b>student-grades</b>: Displays a student’s grades grouped by
+ * category</li>
+ * </ul>
+ * 
+ * @author Max Ma, Antonio Hernandez
+ * @version 1.0
+ */
 public class GradeManager {
     private static Integer selectedClassID = null;
 
+    /**
+     * Displays the GradeManager menu to the user, listing all the available
+     * commands and their descriptions.
+     * This method provides an overview of the operations the user can perform in
+     * the system.
+     * 
+     * <p>
+     * The menu includes commands for managing classes, assignments, students,
+     * grading, and viewing reports.
+     * </p>
+     * 
+     * The available commands are:
+     * <ul>
+     * <li><b>1. Create a class:</b> Creates a new class with the specified
+     * parameters.</li>
+     * <li><b>2. List all classes:</b> Displays a list of all the classes in the
+     * system.</li>
+     * <li><b>3. Select a class:</b> Selects a class by specifying the class name,
+     * term, and section.</li>
+     * <li><b>4. Show current class:</b> Displays details of the current class.</li>
+     * <li><b>5. Show categories:</b> Displays the available assignment
+     * categories.</li>
+     * <li><b>6. Add category:</b> Adds a new category with a specified name and
+     * weight.</li>
+     * <li><b>7. Show assignments:</b> Displays all the assignments in the current
+     * class.</li>
+     * <li><b>8. Add assignment:</b> Adds a new assignment with the specified
+     * parameters.</li>
+     * <li><b>9. Add student:</b> Adds a student to the system with the given
+     * username, student ID, last name, and first name.</li>
+     * <li><b>10. Show students:</b> Displays a list of all students in the current
+     * class.</li>
+     * <li><b>11. Grade student:</b> Assigns a grade to a student for a specified
+     * assignment.</li>
+     * <li><b>12. Show student grades:</b> Displays the grades for a specified
+     * student.</li>
+     * <li><b>13. Show gradebook:</b> Displays the complete gradebook for the
+     * current class.</li>
+     * <li><b>14. Exit:</b> Closes the GradeManager application.</li>
+     * <li><b>15. Menu:</b> Displays the menu again.</li>
+     * </ul>
+     */
     public static void showMenu() {
         System.out.println("======= GradeManager Menu =======");
         System.out.println("1. Create a class: new-class <ClassName> <Term> <Section> <Subject>");
@@ -26,32 +126,23 @@ public class GradeManager {
         System.out.println("=================================");
     }
 
-    // public static ResultSet newClass(String[] inputParameters, Connection con)
-    // throws SQLException {
-    // System.out.println("Adding a new class");
-    // /* TO INSERT INTO TABLES */
-    // String courseNumber = inputParameters[0];
-    // String term = inputParameters[1];
-    // String sectionNumber = inputParameters[2];
-    // String className = inputParameters[3];
-
-    // String insert = "INSERT INTO gradeManager.Class (CourseNumber, ClassName,
-    // Term, SectionNumber, Description) " +
-    // "VALUES ('" + courseNumber + "', '" + className + "', '" + term + "', '" +
-    // sectionNumber
-    // + "', 'No description')";
-
-    // Statement stmt = con.createStatement();
-    // int res = stmt.executeUpdate(insert);
-
-    // con.commit(); // transaction block ends
-
-    // System.out.println("Transaction done!");
-
-    // return stmt.executeQuery("select * from `" + "gradeManager" +
-    // "`.`Student`;");
-    // }
-
+    /**
+     * Creates a new class in the database with the given course details.
+     * 
+     * This method takes the course number, term, section number, and class name as
+     * parameters,
+     * validates that enough parameters are provided, and then inserts the new class
+     * record into
+     * the database. If successful, a confirmation message is printed with the
+     * number of rows affected.
+     * 
+     * 
+     * @param params An array of strings containing the course number, term, section
+     *               number, and class name.
+     * @param con    A connection object to the database.
+     * @throws SQLException If there is an issue with the SQL query or database
+     *                      connection.
+     */
     public static void newClass(String[] params, Connection con) throws SQLException {
         if (params.length < 4) {
             System.out.println("Usage: new-class <courseNumber> <term> <sectionNumber> \"<className>\"");
@@ -74,6 +165,24 @@ public class GradeManager {
         con.commit();
     }
 
+    /**
+     * Lists all classes in the database along with the number of students enrolled
+     * in each class.
+     * 
+     * 
+     * This method retrieves all classes from the database, along with the count of
+     * students
+     * enrolled in each class. It uses a SQL `LEFT JOIN` query to join the `Class`
+     * and `Enrolled`
+     * tables and groups the results by class ID. The results are then printed to
+     * the console in
+     * a readable format.
+     * 
+     * 
+     * @param con A connection object to the database.
+     * @throws SQLException If there is an issue with the SQL query or database
+     *                      connection.
+     */
     public static void listClasses(Connection con) throws SQLException {
         String sql = "SELECT c.*, COUNT(e.StudentID) as StudentCount " +
                 "FROM Class c LEFT JOIN Enrolled e ON c.ClassID = e.ClassID " +
@@ -89,6 +198,30 @@ public class GradeManager {
         con.commit();
     }
 
+    /**
+     * Selects a class based on the provided course number, and optionally term and
+     * section number.
+     * 
+     * This method allows the user to select a class based on the course number. If
+     * a term
+     * and section number are provided, the method will select the class that
+     * matches all three parameters.
+     * If only the course number is provided, the method will return the most recent
+     * class based on the term.
+     * 
+     * 
+     * The selected class's ID is stored in the `selectedClassID` variable for
+     * further use.
+     * 
+     * 
+     * @param params An array of parameters where the first element is the course
+     *               number,
+     *               the second element is the optional term, and the third is the
+     *               optional section number.
+     * @param con    A connection object to the database.
+     * @throws SQLException If there is an issue with the SQL query or database
+     *                      connection.
+     */
     public static void selectClass(String[] params, Connection con) throws SQLException {
         if (params.length < 1) {
             System.out.println("Usage: select-class <courseNumber> [<term> <sectionNumber>]");
@@ -122,6 +255,21 @@ public class GradeManager {
         con.commit();
     }
 
+    /**
+     * Displays the details of the currently selected class.
+     * 
+     * 
+     * This method retrieves and displays the course number, term, section number,
+     * class name,
+     * and description of the class that is currently selected (based on the
+     * `selectedClassID` variable).
+     * If no class is selected, a message is printed indicating this.
+     * 
+     * 
+     * @param con A connection object to the database.
+     * @throws SQLException If there is an issue with the SQL query or database
+     *                      connection.
+     */
     public static void showClass(Connection con) throws SQLException {
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -176,6 +324,27 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Adds a new category to the currently selected class.
+     * 
+     * <p>
+     * This method adds a category (such as "Exam", "Homework", etc.) to the
+     * selected class with a specified
+     * weight. The weight represents the relative importance of the category in the
+     * grading system. If no class
+     * is selected or the parameters are invalid, the method will print an error
+     * message and return false.
+     * </p>
+     * 
+     * @param inputParams An array of strings containing the category name and
+     *                    weight. The array should contain
+     *                    two elements: the name of the category and the weight (a
+     *                    float value).
+     * @param con         A connection object to the database.
+     * @return True if the category was successfully added, otherwise false.
+     * @throws SQLException If there is an issue with the SQL query or database
+     *                      connection.
+     */
     public static boolean addCategories(String[] inputParams, Connection con) throws SQLException {
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -206,6 +375,22 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Displays all assignments for the currently selected class, grouped by their
+     * respective categories.
+     * 
+     * <p>
+     * This method retrieves and displays assignments within the currently selected
+     * class, showing each
+     * assignment's name, associated category, and point value. If no class is
+     * selected, an error message is printed.
+     * </p>
+     * 
+     * @param con A connection object to the database.
+     * @return True if assignments are displayed successfully, otherwise false.
+     * @throws SQLException If there is an issue with the SQL query or database
+     *                      connection.
+     */
     public static boolean showAssignmentsByCategories(Connection con) throws SQLException {
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -236,6 +421,22 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Retrieves the CategoryID for a specific category in a given class.
+     * 
+     * <p>
+     * This method queries the database for a category by name within a specified
+     * class and returns its corresponding CategoryID.
+     * If the category does not exist in the given class, an exception is thrown.
+     * </p>
+     * 
+     * @param category The name of the category.
+     * @param classId  The ID of the class to which the category belongs.
+     * @param con      A connection object to the database.
+     * @return The CategoryID corresponding to the specified category and class.
+     * @throws SQLException If there is an issue with the SQL query or if the
+     *                      category is not found.
+     */
     public static int getCategoryID(String category, int classId, Connection con) throws SQLException {
         String sql = "SELECT Category.CategoryID FROM Category WHERE Category.classID = ? AND Category.Name = ?;";
         PreparedStatement pstmt = con.prepareStatement(sql);
@@ -251,6 +452,23 @@ public class GradeManager {
         }
     }
 
+    /**
+     * Looks up a student by their StudentID in the database.
+     * 
+     * <p>
+     * This method checks if a student with the given StudentID exists in the
+     * Student table. If found, it prints a message indicating the student was found
+     * and returns true.
+     * If no student is found, it prints a message indicating that no student was
+     * found and that a new student will be added, returning false.
+     * </p>
+     * 
+     * @param studentid The StudentID of the student to be looked up.
+     * @param con       The connection object to the database.
+     * @return true if the student is found, false if the student is not found.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     public static boolean studentLookUp(int studentid, Connection con) throws SQLException {
         String sql = "SELECT * FROM Student WHERE EXISTS (select Student.StudentID FROM Student WHERE Student.StudentID = ?);";
         PreparedStatement pstmt = con.prepareStatement(sql);
@@ -271,6 +489,22 @@ public class GradeManager {
         }
     }
 
+    /**
+     * Adds a new student to the database.
+     * 
+     * <p>
+     * This method inserts a new student record into the Student table in the
+     * database with the provided StudentID, username, and name.
+     * </p>
+     * 
+     * @param username  The username of the student to be added.
+     * @param name      The full name of the student to be added.
+     * @param studentid The unique ID of the student to be added.
+     * @param con       The connection object to the database.
+     * @return true if the student was successfully added.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     public static boolean addStudent(String username, String name, int studentid, Connection con) throws SQLException {
         // String sql = "INSERT INTO Student (StudentID,username, name) VALUES
         // (111,'rhodgets9', 'Rebeka Hodgets');;";
@@ -382,6 +616,22 @@ public class GradeManager {
         }
     }
 
+    /**
+     * Adds a student to a class based on their username.
+     * 
+     * <p>
+     * This method retrieves the student ID associated with the provided username
+     * and adds the student to the enrolled list of the selected class.
+     * </p>
+     * 
+     * @param parameters An array of strings containing the username of the student
+     *                   to be added to the class.
+     * @param con        The connection object to the database.
+     * @return true if the student was successfully added to the class; false if no
+     *         student was found with the provided username.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     public static boolean addStudentUsername(String[] parameters, Connection con) throws SQLException {
         String userName = parameters[0];
         // Based on username get studentID
@@ -483,6 +733,27 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Adds a student to the selected class.
+     * 
+     * <p>
+     * This method checks if the class has been selected, validates the provided
+     * parameters, and either looks up an existing student or creates a new student
+     * record. It then adds the student to the specified class by inserting an
+     * enrollment record into the database.
+     * </p>
+     * 
+     * @param parameters An array of strings containing the student information. If
+     *                   only the username is provided, the student will be added
+     *                   based on the username. Otherwise, the array must contain
+     *                   the following elements: username, student ID, last name,
+     *                   and first name.
+     * @param con        The connection object to the database.
+     * @return true if the student was successfully added to the class; false if
+     *         there were any issues or invalid parameters.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     public static boolean addStudent(String[] parameters, Connection con) throws SQLException {
         // Validate class has been selected
         if (selectedClassID == null) {
@@ -531,6 +802,24 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Displays the grades of a student in the selected class, including details
+     * about individual assignments, categories, and the overall grade.
+     * 
+     * <p>
+     * This method fetches the student's ID based on their username, checks if they
+     * are enrolled in the selected class, and then retrieves the student's grades
+     * for assignments in various categories. The results are grouped by category,
+     * showing the grade for each assignment, the earned and possible points for
+     * each category, and the overall grade based on the weighted categories.
+     * </p>
+     * 
+     * @param params An array of strings containing the student's username. The
+     *               array must contain exactly one element.
+     * @param con    The connection object to the database.
+     * @throws SQLException If there is an issue with the SQL queries or the
+     *                      database connection.
+     */
     public static void studentGrades(String[] params, Connection con) throws SQLException {
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -624,6 +913,20 @@ public class GradeManager {
         con.commit();
     }
 
+    /**
+     * Displays the gradebook for all students enrolled in the selected class,
+     * showing their username, student ID, full name, and total grade.
+     * 
+     * <p>
+     * This method fetches the list of students enrolled in the selected class,
+     * calculates their total grades using the `calculateTotalGrade` method, and
+     * prints the results in a formatted way.
+     * </p>
+     * 
+     * @param con The connection object to the database.
+     * @throws SQLException If there is an issue with the SQL queries or the
+     *                      database connection.
+     */
     public static void gradebook(Connection con) throws SQLException {
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -649,6 +952,21 @@ public class GradeManager {
         con.commit();
     }
 
+    /**
+     * Retrieves the weight of a specific category for the selected class.
+     * 
+     * <p>
+     * This method queries the database to find the weight of a given category in
+     * the selected class. If the category is found, it returns the weight;
+     * otherwise, it returns 0.0.
+     * </p>
+     * 
+     * @param categoryName The name of the category whose weight is to be retrieved.
+     * @param con          The connection object to the database.
+     * @return The weight of the specified category in the selected class.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     private static double getCategoryWeight(String categoryName, Connection con) throws SQLException {
         String sql = "SELECT Weight FROM Category WHERE Name = ? AND classID = ?";
         PreparedStatement pstmt = con.prepareStatement(sql);
@@ -661,6 +979,23 @@ public class GradeManager {
         return 0.0;
     }
 
+    /**
+     * Calculates the total grade for a student based on their performance in each
+     * category of assignments for a specific class.
+     * 
+     * <p>
+     * This method retrieves the earned points, possible points, and category weight
+     * for each category in the class. It calculates the total grade by multiplying
+     * the earned percentage for each category by its weight.
+     * </p>
+     * 
+     * @param studentID The ID of the student whose total grade is being calculated.
+     * @param con       The connection object to the database.
+     * @return The total grade as a percentage for the student in the selected
+     *         class.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     private static double calculateTotalGrade(int studentID, Connection con) throws SQLException {
         String sql = "SELECT c.Name AS CategoryName, SUM(COALESCE(comp.Grade, 0)) AS Earned, " +
                 "SUM(a.PointValue) AS Possible, c.Weight " +
@@ -774,6 +1109,21 @@ public class GradeManager {
         return true;
     }
 
+    /**
+     * Retrieves the AssignmentID for a given assignment name.
+     * 
+     * <p>
+     * This method queries the database to find the AssignmentID for the assignment
+     * that matches the given assignment name.
+     * </p>
+     * 
+     * @param assignmentName The name of the assignment whose ID is to be retrieved.
+     * @param con            The connection object to the database.
+     * @return The AssignmentID if the assignment is found, otherwise -1 if no
+     *         matching assignment is found.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     public static int getAssignmentID(String assignmentName, Connection con) throws SQLException {
         String sql = "SELECT Assignment.AssignmentID FROM gradeManager.Assignment where Assignment.Name = \""
                 + assignmentName + "\";";
@@ -785,6 +1135,22 @@ public class GradeManager {
         return -1;
     }
 
+    /**
+     * Retrieves the point value for a given assignment ID.
+     * 
+     * <p>
+     * This method queries the database to retrieve the point value for the
+     * assignment associated with the given assignment ID.
+     * </p>
+     * 
+     * @param assignmentID The ID of the assignment whose point value is to be
+     *                     retrieved.
+     * @param con          The connection object to the database.
+     * @return The point value for the assignment if found, otherwise -1 if no
+     *         matching assignment is found.
+     * @throws SQLException If there is an issue with the SQL query or the database
+     *                      connection.
+     */
     public static int getAssignmentPoints(int assignmentID, Connection con) throws SQLException {
         String sql = "SELECT Assignment.PointValue FROM gradeManager.Assignment where Assignment.AssignmentID = ?;";
         PreparedStatement pstmt = con.prepareStatement(sql);
@@ -797,6 +1163,21 @@ public class GradeManager {
 
     }
 
+    /**
+     * Parses the input string into an array of tokens, handling both quoted and
+     * unquoted strings.
+     * 
+     * <p>
+     * This method splits the input string into tokens, where each token is either a
+     * word or a quoted string.
+     * Quoted strings are treated as a single token, and spaces are used to separate
+     * unquoted tokens.
+     * </p>
+     * 
+     * @param input The input string to be parsed into tokens.
+     * @return An array of strings, where each string is a token extracted from the
+     *         input.
+     */
     public static String[] parseInput(String input) {
         // Regular expression that captures strings (with or without quotes) and treats
         // them as tokens
@@ -818,6 +1199,29 @@ public class GradeManager {
         return tokens.toArray(new String[0]); // Convert list to array
     }
 
+    /**
+     * The main method that starts the GradeManager application.
+     * 
+     * <p>
+     * This method establishes a connection to a MySQL database, displays a welcome
+     * banner, and enters a read-eval-print loop (REPL) to accept user commands. The
+     * user can perform various actions like adding classes, adding categories,
+     * managing assignments, grading students, and viewing the gradebook.
+     * </p>
+     * 
+     * <p>
+     * The method handles different commands entered by the user, performs the
+     * corresponding actions, and commits the changes to the database. In case of
+     * errors, the method ensures that the transaction is rolled back to maintain
+     * database integrity.
+     * </p>
+     * 
+     * @param args The command-line arguments (unused in this case).
+     * @throws ClassNotFoundException If the JDBC driver class is not found.
+     * @throws SQLException           If a database error occurs.
+     * @throws InstantiationException If the JDBC driver cannot be instantiated.
+     * @throws IllegalAccessException If the JDBC driver class cannot be accessed.
+     */
     public static void main(String[] args)
             throws ClassNotFoundException, SQLException, InstantiationException, IllegalAccessException {
         // JDBC Variables
