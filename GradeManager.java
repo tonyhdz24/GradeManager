@@ -432,7 +432,6 @@ public class GradeManager {
      * @throws SQLException
      */
     public static boolean showStudents(String[] inputParameters, Connection con) throws SQLException {
-        selectedClassID = 2;
         // Validate class has been selected
         if (selectedClassID == null) {
             System.out.println("No class selected");
@@ -681,16 +680,14 @@ public class GradeManager {
      * @throws SQLException
      */
     public static boolean grade(String[] inputParameters, Connection con) throws SQLException {
-        selectedClassID = 1;
         // Validate class has been selected
-        // if (selectedClassID == null) {
-        // System.out.println("No class selected");
-        // return false;
-        // } else if (inputParameters.length != 3) {
-        // System.out.println("Invalid parameters\nUsage: grade <assignmentname>
-        // <username> <grade>");
-        // return false;
-        // }
+        if (selectedClassID == null) {
+            System.out.println("No class selected");
+            return false;
+        } else if (inputParameters.length != 3) {
+            System.out.println("Invalid parameters\nUsage: grade <assignmentname> <username> <grade>");
+            return false;
+        }
 
         // parsing input array
         String assignmentName = "Homework-1";
@@ -704,8 +701,6 @@ public class GradeManager {
         // then get its id
         int assignmentID = getAssignmentID(assignmentName, con);
 
-        // DEBUG
-        System.out.println("Assignment ID " + assignmentID);
         if (assignmentID == -1) {
             System.out.println("No assignment found with name " + assignmentName);
             return false;
@@ -728,23 +723,34 @@ public class GradeManager {
                     "WARNING input grade " + grade + " greater than max point value of " + assignmentPointValue);
             return false;
         }
-
-        // SQL query
-        // EXAMPLE: insert into Completed (StudentID, AssignmentID, Grade) values (1,
-        // 1,
-        // 85);
-        String gradeSQL = "INSERT INTO Completed (StudentID, AssignmentID, Grade) VALUES (?, ?, ?)";
-
-        PreparedStatement pstmt = con.prepareStatement(gradeSQL);
-
-        // Setting query parameters
-        pstmt.setInt(1, studentID);
-        pstmt.setInt(2, assignmentID);
-        pstmt.setInt(3, selectedClassID);
-
-        // Executing query
-        pstmt.executeUpdate();
-        con.commit();
+        // check if there is already a grade for the assignment
+        // 4. Check if a grade already exists
+        String checkSQL = "SELECT Grade FROM Completed WHERE StudentID = ? AND AssignmentID = ?";
+        PreparedStatement checkStmt = con.prepareStatement(checkSQL);
+        checkStmt.setInt(1, studentID);
+        checkStmt.setInt(2, assignmentID);
+        ResultSet rs = checkStmt.executeQuery();
+        if (rs.next()) {
+            // 5a. Update existing grade
+            String updateSQL = "UPDATE Completed SET Grade = ? WHERE StudentID = ? AND AssignmentID = ?";
+            PreparedStatement updateStmt = con.prepareStatement(updateSQL);
+            updateStmt.setInt(1, grade);
+            updateStmt.setInt(2, studentID);
+            updateStmt.setInt(3, assignmentID);
+            updateStmt.executeUpdate();
+            con.commit();
+            System.out.println("Updated grade for " + username + " on " + assignmentName);
+        } else {
+            // 5b. Insert new grade
+            String insertSQL = "INSERT INTO Completed (StudentID, AssignmentID, Grade) VALUES (?, ?, ?)";
+            PreparedStatement insertStmt = con.prepareStatement(insertSQL);
+            insertStmt.setInt(1, studentID);
+            insertStmt.setInt(2, assignmentID);
+            insertStmt.setInt(3, grade);
+            insertStmt.executeUpdate();
+            con.commit();
+            System.out.println("Inserted grade for " + username + " on " + assignmentName);
+        }
 
         return true;
     }
